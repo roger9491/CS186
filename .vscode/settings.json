@@ -1,0 +1,6 @@
+{
+    "commentTranslate.multiLineMerge": true,
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.debug.settings.showStaticVariables": true
+    "github.copilot.enable": false,
+}

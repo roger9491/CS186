@@ -87,7 +87,14 @@ public class SortOperator extends QueryOperator {
      */
     public Run sortRun(Iterator<Record> records) {
         // TODO(proj3_part1): implement
-        return null;
+        Run run = new Run(this.transaction, this.outputSchema);
+        List<Record> lRecords = new ArrayList<>();
+        while (records.hasNext()) {
+            lRecords.add(records.next());
+        }
+        lRecords.sort(comparator);
+        run.addAll(lRecords);
+        return run;
     }
 
     /**
@@ -108,7 +115,31 @@ public class SortOperator extends QueryOperator {
     public Run mergeSortedRuns(List<Run> runs) {
         assert (runs.size() <= this.numBuffers - 1);
         // TODO(proj3_part1): implement
-        return null;
+        PriorityQueue<Pair<Record, Integer>> priorityQueue = new PriorityQueue<Pair<Record, Integer>>(
+            new RecordPairComparator()
+        );
+        List<Iterator<Record>> itRuns = new ArrayList<>();
+        for (Run run: runs) {
+            itRuns.add(run.iterator());
+        }
+
+
+        for (int i = 0; i < itRuns.size(); i++) {
+            priorityQueue.add(new Pair<Record,Integer>(itRuns.get(i).next(), i));
+        }
+
+        Run mRun = new Run(this.transaction, this.outputSchema);
+        while (!priorityQueue.isEmpty()) {
+            Pair<Record, Integer> pair = priorityQueue.poll();
+            mRun.add(pair.getFirst());
+            
+            if (itRuns.get(pair.getSecond()).hasNext())
+                priorityQueue.add(
+                    new Pair<Record, Integer>(
+                        itRuns.get(pair.getSecond()).next(),
+                        pair.getSecond()));
+        }
+        return mRun;
     }
 
     /**
@@ -133,7 +164,23 @@ public class SortOperator extends QueryOperator {
      */
     public List<Run> mergePass(List<Run> runs) {
         // TODO(proj3_part1): implement
-        return Collections.emptyList();
+        List<Run> meRuns = new ArrayList<>();
+        int mergeNum = this.numBuffers - 1;
+
+        int c = 0;
+        List<Run> runsTemp = new ArrayList<>();
+        for (int i = 0; i < runs.size(); i++) {
+            if (c == mergeNum) {
+                meRuns.add(mergeSortedRuns(runsTemp));
+                runsTemp = new ArrayList<>();
+                c = 0;
+            }
+            runsTemp.add(runs.get(i));
+            c++;
+        }
+
+        if (c != 0) meRuns.add(mergeSortedRuns(runsTemp));
+        return meRuns;
     }
 
     /**
